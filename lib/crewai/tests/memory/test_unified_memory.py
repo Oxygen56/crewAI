@@ -31,6 +31,20 @@ def test_memory_record_defaults() -> None:
     assert isinstance(r.created_at, datetime)
 
 
+def test_memory_record_timestamps_are_naive_utc() -> None:
+    """Default timestamps must be naive UTC datetimes (matching utcnow behavior)."""
+    r = MemoryRecord(content="hello")
+
+    # Must be naive (no tzinfo) — matches the deprecated utcnow() contract
+    assert r.created_at.tzinfo is None, "created_at must be naive (no timezone)"
+    assert r.last_accessed.tzinfo is None, "last_accessed must be naive (no timezone)"
+
+    # Must be close to current UTC time
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    delta = abs((now_utc - r.created_at).total_seconds())
+    assert delta < 5, f"created_at ({r.created_at}) too far from UTC now ({now_utc})"
+
+
 def test_memory_match() -> None:
     r = MemoryRecord(content="x", scope="/a")
     m = MemoryMatch(record=r, score=0.9, match_reasons=["semantic"])
